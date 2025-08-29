@@ -844,6 +844,8 @@
             // Generate random 16-digit order ID
             const orderId = Math.floor(Math.random() * 9000000000000000) + 1000000000000000;
             
+            // API credentials are now handled securely by Netlify function
+            
             // Prepare the API payload
             const payload = {
                 "order_id": orderId.toString(),
@@ -870,40 +872,59 @@
 
             console.log('Making payment request with payload:', payload);
 
-            // Determine API endpoint based on environment
-            const apiEndpoint = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                ? '/api/payment/initiate'  // Local development
-                : window.location.origin + '/api/payment/initiate';  // Production
+            // Call Netlify function for secure Juspay API integration
+            console.log('Calling Juspay session API via Netlify function...');
             
-            console.log('Using API endpoint:', apiEndpoint);
-
-            // Make API call to backend (which calls Juspay)
+            // Use Netlify function endpoint
+            const apiEndpoint = '/.netlify/functions/payment-initiate';
+            
+            console.log('API Endpoint:', apiEndpoint);
+            console.log('Payload:', payload);
+            
             fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
             })
             .then(response => {
-                console.log('API Response Status:', response.status);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 return response.json();
             })
             .then(data => {
-                console.log('Juspay API Response:', data);
+                console.log('✅ Juspay API Response:', data);
                 
                 // Check if response has payment_links.web
                 if (data.payment_links && data.payment_links.web) {
-                    // Open payment page in new window
+                    console.log('✅ Payment URL found:', data.payment_links.web);
+                    // Open the actual Juspay payment page
                     window.open(data.payment_links.web, '_blank');
                     closePaymentModal();
+                } else if (data.session_id) {
+                    // Alternative: construct payment URL from session_id
+                    const paymentUrl = `https://sandbox.juspay.in/payment?session_id=${data.session_id}`;
+                    console.log('✅ Using session_id to construct payment URL:', paymentUrl);
+                    window.open(paymentUrl, '_blank');
+                    closePaymentModal();
                 } else {
-                    throw new Error('Payment link not found in response');
+                    console.error('❌ No payment_links.web or session_id in response:', data);
+                    throw new Error('Payment link not found in Juspay response');
                 }
             })
             .catch(error => {
-                console.error('Payment API Error:', error);
-                alert('Payment processing failed. Please try again. Check console for details.');
+                console.error('❌ Payment API Error:', error);
+                
+                alert(`Payment Error: ${error.message}\n\n` +
+                      `Please try again or contact support.\n\n` +
+                      `Order ID: ${payload.order_id}\n` +
+                      `Product: ${currentProductName}\n` +
+                      `Amount: ${payload.amount} ${payload.currency}`);
             })
             .finally(() => {
                 // Reset button state
