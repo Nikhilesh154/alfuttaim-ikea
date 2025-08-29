@@ -37,8 +37,16 @@ exports.handler = async (event, context) => {
     // Get environment variables (these will be set in Netlify dashboard)
     const JUSPAY_API_KEY = process.env.JUSPAY_API_KEY || 'Basic NDRBMjdCNjVENkM0NTQ0Qjg4QTQyMjAwQjYwRUI4Og==';
     const MERCHANT_ID = process.env.MERCHANT_ID || 'alfuttaimtest';
+    const CLIENT_ID = process.env.PAYMENT_PAGE_CLIENT_ID || 'testikea';
+    const GATEWAY_REF_ID = process.env.GATEWAY_REFERENCE_ID || 'Stripe_UK';
+    
+    // Add environment variables to the payload
+    requestData.payment_page_client_id = CLIENT_ID;
+    requestData['metadata.JUSPAY:gateway_reference_id'] = GATEWAY_REF_ID;
     
     console.log('Using MERCHANT_ID:', MERCHANT_ID);
+    console.log('Using CLIENT_ID:', CLIENT_ID);
+    console.log('Using GATEWAY_REF_ID:', GATEWAY_REF_ID);
     console.log('Environment loaded from Netlify');
     
     // Make the API call to Juspay

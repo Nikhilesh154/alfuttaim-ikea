@@ -846,22 +846,20 @@
             
             // API credentials are now handled securely by Netlify function
             
-            // Prepare the API payload
+            // Prepare the API payload (client_id and gateway_reference_id now handled by Netlify function)
             const payload = {
                 "order_id": orderId.toString(),
                 "first_name": "John",
                 "last_name": "Doe",
                 "customer_id": "cth_2yvjmhSBKMpLC2u6",
                 "timestamp": Math.floor(Date.now() / 1000).toString(),
-                "payment_page_client_id": "testikea",
                 "action": "paymentPage",
                 "amount": currentProductPrice.toFixed(2),
                 "currency": "AED",
                 "metadata.expiryInMins": "7200",
                 "save_to_locker": "false",
                 "return_url": window.location.href,
-                "metadata.txns.showStatusScreen": "true",
-                "metadata.JUSPAY:gateway_reference_id":"Stripe_UK"
+                "metadata.txns.showStatusScreen": "true"
             };
 
             // Show loading state
@@ -903,15 +901,13 @@
                 // Check if response has payment_links.web
                 if (data.payment_links && data.payment_links.web) {
                     console.log('✅ Payment URL found:', data.payment_links.web);
-                    // Open the actual Juspay payment page
-                    window.open(data.payment_links.web, '_blank');
-                    closePaymentModal();
+                    // Navigate to the actual Juspay payment page in the same tab
+                    window.location.href = data.payment_links.web;
                 } else if (data.session_id) {
                     // Alternative: construct payment URL from session_id
                     const paymentUrl = `https://sandbox.juspay.in/payment?session_id=${data.session_id}`;
                     console.log('✅ Using session_id to construct payment URL:', paymentUrl);
-                    window.open(paymentUrl, '_blank');
-                    closePaymentModal();
+                    window.location.href = paymentUrl;
                 } else {
                     console.error('❌ No payment_links.web or session_id in response:', data);
                     throw new Error('Payment link not found in Juspay response');
